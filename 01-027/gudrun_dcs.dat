@@ -1,0 +1,117 @@
+'  '  '          '  '\'
+
+INSTRUMENT          {
+
+XPDF          Instrument name
+C:\Users\blues\Desktop\i15-1\ee19378-1\Gudrun_PDF\01-027\          Gudrun input file directory:
+C:\Users\blues\Desktop\i15-1\ee19378-1\Gudrun_PDF\01-027\          Data file directory
+xy          Data file type
+StartupFiles\Xray\CrossSec_XCOM.txt          X-ray cross sections file
+StartupFiles\Xray\f0_WaasKirf.txt          X-ray form factor file
+StartupFiles\Xray\CrossSec_Compton_Balyuzi.txt          X-ray Compton scattering file
+0.5  25  0.01          Q-range [1/?] for final DCS
+50  0.02          r-max and r-step for final g(r)
+
+}
+
+BEAM          {
+
+CYLINDRICAL          Sample geometry
+2          Number of beam profile values
+1.0  1.0            Beam profile values (Maximum of 50 allowed currently)
+0.0020  0.0100  100          Step size for absorption and m.s. calculation and no. of slices
+5          Step in scattering angle to calculate corrections at: [deg.]          
+-0.035  0.035  -0.7  0.7          Incident beam edges relative to centre of sample [cm]
+-0.035  0.035  -0.7  0.7          Scattered beam edges relative to centre of sample [cm]
+*          File containing bremsstrahlung intensity
+0          Density of target material [gm/cm^3] 
+0          Effective target penetration depth [cm] 
+Na          K-beta filter 
+0          K-beta filter density [gm/cm^3] 
+0          K-beta filter thickness [cm] 
+0          Bremsstrahlung power 
+0          Detector cutoff [keV]
+0          Cutoff width [keV] 
+*          Lowest scattering angle
+*          Highest scattering angle
+*          Scattering angle step
+0.0          Angle offset [deg.] 
+*          Anode material:
+*          Tube voltage [kV]
+0.161669          Wavelength [A]:
+0          Theta-theta scanning?
+0          Fixed slits?
+0.0  0.0  -1.0          Footprint length, sample thickness, and depression (all relative to sample dimension):
+0.0  0.0  -1.0          Position, width and power for low angle cutoff [deg]: 
+*          Tube current [mA]
+*          kAlpha1 [A] 
+*          kAlpha2 [A] 
+*          kBeta [A] 
+0.0  0.0          kAlpha2 and kBeta relative intensities:  
+0.8          Bremsstrahlung scattering amplitude
+3          No. of bremsstrahlung iterations
+
+}
+
+NORMALISATION          {
+
+0.0          Azimuthal angle of detector above scattering plane:
+0          Divide by <F>^2? 
+2          Power for Breit-Dirac factor (2 -3) 
+1          Krogh-Moe & Norman normalisation
+0.0          Overlap factor
+
+}
+
+SAMPLE BACKGROUND          {
+
+1            Number of  files
+i15-1-18909_tth_det2_0.xy          SAMPLE BACKGROUND data files
+0.1          Sample background factor 
+1.0          Data factor
+0          Exclude scans
+
+}
+
+SAMPLE          {
+
+1            Number of  files
+i15-1-18935_tth_det2_0.xy          SAMPLE data files
+1          Force calculation of sample corrections?
+Li  Li  7.0  0.0  0.0          Composition
+La  La  3.0  0.0  0.0          Composition
+Zr  Zr  2.0  0.0  0.0          Composition
+O  O  12.0  0.0  0.0          Composition
+*  0  0  0  0          * 0 0 0 0 to specify end of composition input
+SameAsBeam          Geometry
+0.0  0.05          Inner and outer radii (cm)
+2.5          Sample height (cm)
+5.07          Density Units:  gm/cm^3?
+TABLES          Total cross section source
+2.0          Tweak factor
+2.5          Top hat width (1/?) for cleaning up Fourier Transform
+1.8          Minimum radius for Fourier Transform [?]
+0.15          Width of broadening in r-space [A]
+0  0          0   0          to finish specifying wavelength range of resonance
+0.0  0.0  1.0          Exponential amplitude, decay [?] and stretch
+2.455842e-02          Sample calibration factor
+5          No. of iterations
+0.0 0.0 0.0 38.739 2.0 17.963 0.0 0.0 0.0           Fluorescence levels
+1          Factor to modify multiple scattering (0 - 1)
+-0.5          Incident beam polarization factor (-1 -> +1)
+1.0          Factor for Compton scattering
+0.8          Bremsstrahlung scattering amplitude
+3          No. of bremsstrahlung iterations
+0          Broadening power
+0.0  0.0          kAlpha2 and kBeta relative intensities:  
+1.0          Data factor
+1          Analyse this sample? 
+0          Exclude scans
+
+}
+
+GO          
+
+
+END          
+Date and time last written:  20180814 22:49:27          

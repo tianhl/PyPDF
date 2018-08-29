@@ -1,0 +1,36 @@
+'  '  '          '  '\'
+
+CYLINDRICAL          Sample geometry
+2          Number of beam profile values
+1.0  1.0            Beam profile values (Maximum of 50 allowed currently)
+0.0020  0.0100  100          Step size for absorption and m.s. calculation and no. of slices
+5          Step in scattering angle to calculate corrections at: [deg.]          
+-0.035  0.035  -0.7  0.7          Incident beam edges relative to centre of sample [cm]
+-0.035  0.035  -0.7  0.7          Scattered beam edges relative to centre of sample [cm]
+*          File containing bremsstrahlung intensity
+0          Density of target material [gm/cm^3] 
+0          Effective target penetration depth [cm] 
+Na          K-beta filter 
+0          K-beta filter density [gm/cm^3] 
+0          K-beta filter thickness [cm] 
+0          Bremsstrahlung power 
+0          Detector cutoff [keV]
+0          Cutoff width [keV] 
+*          Lowest scattering angle
+*          Highest scattering angle
+*          Scattering angle step
+0.0          Angle offset [deg.] 
+*          Anode material:
+*          Tube voltage [kV]
+0.161669          Wavelength [A]:
+0          Theta-theta scanning?
+0          Fixed slits?
+0.0  0.0  -1.0          Footprint length, sample thickness, and depression (all relative to sample dimension):
+0.0  0.0  -1.0          Position, width and power for low angle cutoff [deg]: 
+*          Tube current [mA]
+*          kAlpha1 [A] 
+*          kAlpha2 [A] 
+*          kBeta [A] 
+0.0  0.0          kAlpha2 and kBeta relative intensities:  
+0.8          Bremsstrahlung scattering amplitude
+3          No. of bremsstrahlung iterations
