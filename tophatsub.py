@@ -8,7 +8,7 @@ default = '01-027/i15-1-18935_tth_det2_0.'
 
 class PDFSelfScatteringBKG:
     def getBkg(self, r, dR, rMin, qt):
-        # Soper[2009](53,54)
+        # Soper[2009](EQ.53, EQ.54)
         pofr = self.getPofR(r,qt)
         bR   = np.zeros(r.size)
         g0r  = 0.0 # Soper[2009]P.1675 L.1
@@ -21,7 +21,7 @@ class PDFSelfScatteringBKG:
         return r, bR      
     
     def getPofR(self, r, qt):
-        # Soper[2009](49)
+        # Soper[2009](EQ.49)
         x         = np.multiply(r,qt)
         pofr      = lambda x: 3*(math.sin(x)-x*math.cos(x))/(x**3)
         pofrArray = np.array([pofr(i) for i in x ])
@@ -36,7 +36,7 @@ class PDFTophatFunction:
         return -1
 
     def interVolume(self, l,m,n,factv):
-        # Soper[2009](A.2)
+        # Soper[2009](EQ.A.2)
         # (2 - delta)(12l^2 + 1)/(2n + 1)^3
         value = (12*(l**2)+1)*factv
         if(l==0):
@@ -46,7 +46,7 @@ class PDFTophatFunction:
         pass
     
     def outerVolume(self, l,m,n, factv, m2, factm):
-        # Soper[2009](A.2)
+        # Soper[2009](EQ.A.2)
         # (12l^2 + 1 - 3l*[4l^2 + 4m^2 - (2n + 1)^2 + 1]/2m)/(2n + 1)^3
         l2 = l**2
         return factv*(12*l2+1-3*l*(4*l2+factm)/m2)
@@ -63,7 +63,7 @@ class PDFTophatFunction:
         return result        
     
     def tophatConvolution(self, cutoffQt, inBins, inHist):
-        # Soper[2009](A.3)
+        # Soper[2009](EQ.A.3)
         n  = self.findIndex(inBins, cutoffQt)
         n2 = 2*n+1
         factv=1/(n2**3)
@@ -189,6 +189,8 @@ class PDFFourierTransform:
         return dR
         
     def g2f(self, r, gR, q):
+        # DKeen[2001](EQ.11)
+        # F(Q)=rho \sum 4*pi*r^2*G(r)*sin(Qr)/(Qr)dr 
         factor = 4*math.pi*self.rho
         RgR    = np.multiply(r,gR)
         fQ     = np.array(fftpack.dst(RgR,type=2,norm='ortho'))
@@ -199,6 +201,8 @@ class PDFFourierTransform:
     
 
     def f2g(self, q, fQ, r):
+        # DKeen[2001](EQ.12)
+        # G(r)=1/(2*pi)^3/rho \sum 4*pi*Q^2*F(Q)*sin(Qr)/(Qr)dQ
         factor = 0.5/((math.pi**2)*self.rho)
         QfQ    = np.multiply(q,fQ)
         gR     = np.array(fftpack.dst(QfQ,type=2,norm='ortho'))
@@ -235,15 +239,15 @@ class PDFTest:
         x,y   = self.ws.loadData(suffix='soq')
         q,iQ  = self.ws.iQExtend2lowQ(x,y)
         hq,iQ = self.ws.data2hist(q,iQ)
-        hq,sQ = self.soq2qsmooth()
-        dQ    = np.subtract(iQ,sQ)
+        hq,sQ = self.th.tophatConvolution(2.5,hq,iQ)    # Soper[2009](EQ.42 EQ.43)
+        dQ    = iQ-sQ                                   # Soper[2009](EQ.44)
         hr,dR = self.ws.zeroGrFromQ(q)
         pr,dR = self.ws.hist2data(hr, dR)
-        dR    = self.ft.f2g(hq, dQ, pr)
-        pr,bR = self.bg.getBkg(pr, dR, 1.8, 2.5)
-        bQ    = self.ft.g2f(hr, bR, q)
-        bQ    = np.divide(bQ, 4*math.pi) # why?
-        IQ    = iQ-sQ-bQ
+        dR    = self.ft.f2g(hq, dQ, pr)                 # Soper[2009](EQ.45)
+        pr,bR = self.bg.getBkg(pr, dR, 1.8, 2.5)        # Soper[2009](EQ.53 EQ.54)
+        bQ    = self.ft.g2f(hr, bR, q)                  # Soper[2009](EQ.55)
+        bQ    = bQ/(4*math.pi)                          # why?
+        IQ    = iQ-sQ-bQ                                # Soper[2009](EQ.56)
         return q, IQ
     
     def getGself(self):
