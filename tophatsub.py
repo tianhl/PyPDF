@@ -1,10 +1,7 @@
 import matplotlib.pyplot as plt
+import scipy.fftpack as fft
 import numpy as np
 import math
-from scipy import fftpack
-
-
-default = '01-027/i15-1-18935_tth_det2_0.'
 
 class PDFSelfScatteringBKG:
     def getBkg(self, r, dR, rMin, qt):
@@ -98,7 +95,7 @@ class PDFWorkspace:
     def loadData(self, filename=None, suffix=None):
         if((filename is None)and(suffix is not None)):
             filename = self.default+suffix
-        print('Open file name: ' + filename)
+        print('Read file: ' + filename)
         
         f=open(filename)
         l=f.readlines()
@@ -108,12 +105,22 @@ class PDFWorkspace:
             if(line[0].startswith("#")):
                 continue
             i = line.split()
-            if(len(i)<3):
+            if(len(i)<2):
                 continue
             x_array.append(float(i[0]))
             y_array.append(float(i[1]))
         return np.array(x_array), np.array(y_array)
     
+    def saveData(self, dataset, filename=None, suffix=None):
+        if((filename is None)and(suffix is not None)):
+            filename = self.default+suffix
+        print('Write file: ' + filename)
+        ctx=np.mat(dataset[0]).T
+        for data in dataset[1:]:
+            dataT = np.mat(data).T
+            ctx   = np.hstack((ctx, dataT))
+        np.savetxt(filename, ctx, fmt='%10.5f')
+        
     def zeroGrFromQ(self, q):
         rstep = math.pi/q.max()
         nstep = len(q)
@@ -173,7 +180,7 @@ class PDFFourierTransform:
         
     def s2d(self, q, iQ, r):
         QiQ = np.multiply(q, iQ)
-        dR  = np.array(fftpack.dst(QiQ,type=2,norm='ortho')[:r.size])
+        dR  = np.array(fft.dst(QiQ,type=2,norm='ortho')[:r.size])
         #dR  = self.dst(q,iQ,r)
         return dR
      
@@ -193,7 +200,7 @@ class PDFFourierTransform:
         # F(Q)=rho \sum 4*pi*r^2*G(r)*sin(Qr)/(Qr)dr 
         factor = 4*math.pi*self.rho
         RgR    = np.multiply(r,gR)
-        fQ     = np.array(fftpack.dst(RgR,type=2,norm='ortho'))
+        fQ     = np.array(fft.dst(RgR,type=2,norm='ortho'))
         #fQ     = self.dst(r,gR,q)
         fQ     = np.multiply(fQ, factor)
         fQ     = np.divide(fQ,q)
@@ -205,7 +212,7 @@ class PDFFourierTransform:
         # G(r)=1/(2*pi)^3/rho \sum 4*pi*Q^2*F(Q)*sin(Qr)/(Qr)dQ
         factor = 0.5/((math.pi**2)*self.rho)
         QfQ    = np.multiply(q,fQ)
-        gR     = np.array(fftpack.dst(QfQ,type=2,norm='ortho'))
+        gR     = np.array(fft.dst(QfQ,type=2,norm='ortho'))
         #gR     = self.dst(q,QfQ,r)
         gR     = np.multiply(gR,factor)
         gR     = np.divide(gR,r)    
@@ -258,5 +265,5 @@ class PDFTest:
         r,dR  = self.ws.zeroGrFromQ(q)
         Gself = self.ft.f2g(q,Iself,r)
         return r, Gself
-    
+                                                                                   
     
