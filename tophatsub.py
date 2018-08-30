@@ -68,7 +68,7 @@ class PDFTophatFunction:
         outHist = np.array([0.0 for i in range(origSize)], dtype=np.float64)
         
         for m in range(origSize):
-            m2 = 2*m
+            m2    = 2*m
             #factt = factv/m2
             factm = m2**2 - n2**2 + 1
             
@@ -95,7 +95,7 @@ class PDFWorkspace:
     def loadData(self, filename=None, suffix=None):
         if((filename is None)and(suffix is not None)):
             filename = self.default+suffix
-        print('Read file: ' + filename)
+        print('Read  file: ' + filename)
         
         f=open(filename)
         l=f.readlines()
@@ -178,9 +178,13 @@ class PDFFourierTransform:
             outF[i] = np.trapz(core,x=inx)      # F(X)=sum[f(x)*sin(X*x)]dx
         return outF
         
-    def s2d(self, q, iQ, r):
-        QiQ = np.multiply(q, iQ)
-        dR  = np.array(fft.dst(QiQ,type=2,norm='ortho')[:r.size])
+    def f2d(self, q, iQ, r):
+        # DKeen[2001](EQ.26)
+        # D(r) = 2/pi \sum Qi(Q)sin(Qr)dQ 
+        QiQ    = q*iQ
+        factor = 2/math.pi
+        dR     = np.array(fft.dst(QiQ,type=2,norm='ortho'))
+        dR     = dR*factor
         #dR  = self.dst(q,iQ,r)
         return dR
      
@@ -189,12 +193,26 @@ class PDFFourierTransform:
         lorch  = np.sinc(np.multiply(q,factor))
         return lorch
     
-    def s2dLorch(self, q, iQ, r):
+    def f2dLorch(self, q, iQ, r):
         lorch       = self.lorchFunction(q,iQ)
         iQWithLorch = np.multiply(iQ, lorch)
-        dR          = self.s2d(q, iQWithLorch, r)
+        dR          = self.f2d(q, iQWithLorch, r)
         return dR
-        
+    
+    def g2d(self, r, gR):
+        # DKeen[2001](EQ.29)
+        # D(r)=4*pi*r*rho*G(r)
+        factor = 4*math.pi*self.rho
+        dR     = factor*r*gR
+        return dR
+    
+    def d2g(self,r,dR):
+        # DKeen[2001](EQ.29)
+        # G(r)=D(r)/(4*pi*r*rho)
+        factor = np.multiply(4*math.pi*self.rho,r)
+        gR     = dR/factor
+        return gR
+    
     def g2f(self, r, gR, q):
         # DKeen[2001](EQ.11)
         # F(Q)=rho \sum 4*pi*r^2*G(r)*sin(Qr)/(Qr)dr 
@@ -206,6 +224,12 @@ class PDFFourierTransform:
         fQ     = np.divide(fQ,q)
         return fQ
     
+    def f2gLorch(self, q, fQ, r):
+        # i(Q) == F(Q), f2g eq to i2g, ref to DKeen[2001](EQ.25)
+        lorch       = self.lorchFunction(q,fQ)
+        fQWithLorch = np.multiply(fQ, lorch)
+        gR          = self.f2g(q, fQWithLorch, r)
+        return gR
 
     def f2g(self, q, fQ, r):
         # DKeen[2001](EQ.12)
@@ -231,8 +255,8 @@ class PDFTest:
         q,iQ  = self.ws.iQExtend2lowQ(x,y)
         hr,dR = self.ws.zeroGrFromQ(q)
         pr,dR = self.ws.hist2data(hr,dR)
-        dR    = self.ft.s2dLorch(q,iQ, pr)
-        return r,dR
+        dR    = self.ft.f2dLorch(q,iQ, pr)
+        return pr,dR
         
     
     def soq2qsmooth(self):
@@ -242,6 +266,48 @@ class PDFTest:
         hq,sQ = self.th.tophatConvolution(2.5,hq,iQ)
         return hq,sQ
     
+    def soq2dofr(self):
+        rMin  = 1.8
+        qT    = 2.5
+        x,y   = self.ws.loadData(suffix='soq')
+        pq,iQ = self.ws.iQExtend2lowQ(x,y)
+        hq,iQ = self.ws.data2hist(pq,iQ)
+        
+        self.ws.saveData((hq,iQ), suffix='pyhist')
+        
+        hq,sQ = self.th.tophatConvolution(qT,hq,iQ)    # Soper[2009](EQ.42 EQ.43)
+        
+        self.ws.saveData((hq,sQ), suffix='pyqsmooth')
+        
+        dQ    = iQ-sQ                                  # Soper[2009](EQ.44)
+        
+        self.ws.saveData((hq,dQ), suffix='pyqsub')
+                                  
+        hr,dR = self.ws.zeroGrFromQ(pq)
+        pr,dR = self.ws.hist2data(hr, dR)
+        dR    = self.ft.f2g(hq, dQ, pr)                 # Soper[2009](EQ.45)
+        pr,bR = self.bg.getBkg(pr, dR, rMin, qT)        # Soper[2009](EQ.53 EQ.54)
+        bQ    = self.ft.g2f(hr, bR, pq)                 # Soper[2009](EQ.55)
+        bQ    = bQ/(4*math.pi)                          # why?
+        
+        self.ws.saveData((pq,bQ), suffix='pyqsub')
+                
+        fQ    = iQ-sQ-bQ                                # Soper[2009](EQ.56)
+        
+        self.ws.saveData((pq,fQ), suffix='pyint01')
+        
+        hr,dR = self.ws.zeroGrFromQ(pq)
+        pr,dR = self.ws.hist2data(hr,dR)
+        dR    = self.ft.f2dLorch(pq,fQ, pr)
+        
+        self.ws.saveData((pr,dR), suffix='pydofr')
+        
+        gR    = self.ft.f2gLorch(pq,fQ, pr)
+        
+        self.ws.saveData((pr,gR), suffix='pygofr')
+        
+        return pr,dR
+        
     def soq2int(self):
         x,y   = self.ws.loadData(suffix='soq')
         q,iQ  = self.ws.iQExtend2lowQ(x,y)
