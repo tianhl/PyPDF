@@ -4,6 +4,14 @@ import numpy as np
 import math
 
 class PDFSelfScatteringBKG:
+    
+    def findIndex(self, inx,item):
+        #find the point near the item
+        for i,it in enumerate(inx):
+            if(it>item):
+                return i-1
+        return -1
+        
     def getBkg(self, r, dR, rMin, qt):
         # Soper[2009](EQ.53, EQ.54)
         pofr = self.getPofR(r,qt)
@@ -11,11 +19,19 @@ class PDFSelfScatteringBKG:
         g0r  = 0.0 # Soper[2009]P.1675 L.1
         for i in range(r.size):
             if(r[i]<rMin):
-                bR[i]=dR[i]-g0r+1.0
+                bR[i] = dR[i]-g0r+1.0
             else:
                 f     = pofr[i]
                 bR[i] = -dR[i]*f/(1-f)
         return r, bR      
+    
+    def getFlatQBkg(self, inq, iQ, minQ, maxQ):
+        first = self.findIndex(inq, minQ)
+        last  = self.findIndex(inq, maxQ)
+        a, b  = np.polyfit(inq[first:last], iQ[first:last], 1)
+        func  = lambda x: a*x+b
+        bkgQ  = np.array([func(i) for i in inq])
+        return inq, bkgQ
     
     def getPofR(self, r, qt):
         # Soper[2009](EQ.49)
@@ -25,13 +41,14 @@ class PDFSelfScatteringBKG:
         return pofrArray
     
 class PDFTophatFunction:
-    def findIndex(self, inq,qt):
-        #find the point near the qt
-        for i,q in enumerate(inq):
-            if(q>qt):
+    
+    def findIndex(self, inx,item):
+        #find the point near the item
+        for i,it in enumerate(inx):
+            if(it>item):
                 return i-1
         return -1
-
+    
     def interVolume(self, l,m,n,factv):
         # Soper[2009](EQ.A.2)
         # (2 - delta)(12l^2 + 1)/(2n + 1)^3
@@ -242,94 +259,3 @@ class PDFFourierTransform:
         gR     = np.divide(gR,r)    
         return gR
             
-class PDFTest:
-
-    def __init__(self):
-        self.ws=PDFWorkspace()
-        self.th=PDFTophatFunction()
-        self.ft=PDFFourierTransform(density=5.9)  
-        self.bg=PDFSelfScatteringBKG()
-    
-    def int2dofr(self):
-        x,y   = self.ws.loadData(suffix='int01')
-        q,iQ  = self.ws.iQExtend2lowQ(x,y)
-        hr,dR = self.ws.zeroGrFromQ(q)
-        pr,dR = self.ws.hist2data(hr,dR)
-        dR    = self.ft.f2dLorch(q,iQ, pr)
-        return pr,dR
-        
-    
-    def soq2qsmooth(self):
-        x,y   = self.ws.loadData(suffix='soq')
-        q,iQ  = self.ws.iQExtend2lowQ(x,y)
-        hq,iQ = self.ws.data2hist(q,iQ)
-        hq,sQ = self.th.tophatConvolution(2.5,hq,iQ)
-        return hq,sQ
-    
-    def soq2dofr(self):
-        rMin  = 1.8
-        qT    = 2.5
-        x,y   = self.ws.loadData(suffix='soq')
-        pq,iQ = self.ws.iQExtend2lowQ(x,y)
-        hq,iQ = self.ws.data2hist(pq,iQ)
-        
-        self.ws.saveData((hq,iQ), suffix='pyhist')
-        
-        hq,sQ = self.th.tophatConvolution(qT,hq,iQ)    # Soper[2009](EQ.42 EQ.43)
-        
-        self.ws.saveData((hq,sQ), suffix='pyqsmooth')
-        
-        dQ    = iQ-sQ                                  # Soper[2009](EQ.44)
-        
-        self.ws.saveData((hq,dQ), suffix='pyqsub')
-                                  
-        hr,dR = self.ws.zeroGrFromQ(pq)
-        pr,dR = self.ws.hist2data(hr, dR)
-        dR    = self.ft.f2g(hq, dQ, pr)                 # Soper[2009](EQ.45)
-        pr,bR = self.bg.getBkg(pr, dR, rMin, qT)        # Soper[2009](EQ.53 EQ.54)
-        bQ    = self.ft.g2f(hr, bR, pq)                 # Soper[2009](EQ.55)
-        bQ    = bQ/(4*math.pi)                          # why?
-        
-        self.ws.saveData((pq,bQ), suffix='pyqsub')
-                
-        fQ    = iQ-sQ-bQ                                # Soper[2009](EQ.56)
-        
-        self.ws.saveData((pq,fQ), suffix='pyint01')
-        
-        hr,dR = self.ws.zeroGrFromQ(pq)
-        pr,dR = self.ws.hist2data(hr,dR)
-        dR    = self.ft.f2dLorch(pq,fQ, pr)
-        
-        self.ws.saveData((pr,dR), suffix='pydofr')
-        
-        gR    = self.ft.f2gLorch(pq,fQ, pr)
-        
-        self.ws.saveData((pr,gR), suffix='pygofr')
-        
-        return pr,dR
-        
-    def soq2int(self):
-        x,y   = self.ws.loadData(suffix='soq')
-        q,iQ  = self.ws.iQExtend2lowQ(x,y)
-        hq,iQ = self.ws.data2hist(q,iQ)
-        hq,sQ = self.th.tophatConvolution(2.5,hq,iQ)    # Soper[2009](EQ.42 EQ.43)
-        dQ    = iQ-sQ                                   # Soper[2009](EQ.44)
-        hr,dR = self.ws.zeroGrFromQ(q)
-        pr,dR = self.ws.hist2data(hr, dR)
-        dR    = self.ft.f2g(hq, dQ, pr)                 # Soper[2009](EQ.45)
-        pr,bR = self.bg.getBkg(pr, dR, 1.8, 2.5)        # Soper[2009](EQ.53 EQ.54)
-        bQ    = self.ft.g2f(hr, bR, q)                  # Soper[2009](EQ.55)
-        bQ    = bQ/(4*math.pi)                          # why?
-        IQ    = iQ-sQ-bQ                                # Soper[2009](EQ.56)
-        return q, IQ
-    
-    def getGself(self):
-        x,y   = self.ws.loadData(suffix='soq')
-        q,iQ  = self.ws.iQExtend2lowQ(x,y)
-        const = 2.0
-        Iself = np.array([const for i in range(q.size)])
-        r,dR  = self.ws.zeroGrFromQ(q)
-        Gself = self.ft.f2g(q,Iself,r)
-        return r, Gself
-                                                                                   
-    
